@@ -1,0 +1,53 @@
+import { authentication } from 'wix-members-backend';
+
+export async function RegisterOrLoginWixMemberNew(userInfo) {
+  console.log('[Auth] Starting register/login process for:', userInfo.email);
+
+  const email = userInfo.email;
+  const password = userInfo.sub; // Unique & stable identifier from Auth0
+
+  try {
+    console.log('[Auth] Attempting login...');
+    const sessionToken = await authentication.login(email, password);
+    console.log('[Auth] Login successful');
+    return { success: true, sessionToken };
+  } catch (loginError) {
+    console.warn('[Auth] Login failed, attempting registration:', loginError.message);
+
+    try {
+      console.log('[Auth] Registering user...');
+      await authentication.register(email, password);
+
+      console.log('[Auth] Registration successful, logging in...');
+      const sessionToken = await authentication.login(email, password);
+      console.log('[Auth] Login after registration successful');
+      return { success: true, sessionToken };
+    } catch (registerError) {
+      console.error('[Auth] Registration/Login failed:', registerError.message);
+      return {
+        success: false,
+        error: 'Registration/Login failed',
+        details: registerError.message
+      };
+    }
+  }
+}
+
+export async function getSessionToken(email) {
+  try {
+    const sessionToken = await authentication.generateSessionToken(email);
+    console.log("Session Token:", sessionToken); // This logs the session token in backend logs
+    return sessionToken;
+  } catch (error) {
+    console.error("Error generating session token:", error);
+    throw error;
+  }
+}
+export async function loginWixMember(userInfo) {
+  try {
+    const sessionToken = await authentication.login(userInfo.email, userInfo.sub);
+    return { success: true, sessionToken };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
